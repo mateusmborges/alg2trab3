@@ -7,14 +7,23 @@
 #include "auxlib.h"
 
 
+int cmpcresc(const void* a, const void* b){
+	return (*(int*)a - *(int*)b);
+}
+
 int ordenacao(char* inFile, char* outFile){
-
 	/* 	DECLARAÇÃO DE VARIÁVEIS 
-		status = char para verificar qual é o status do arquivo	
-		regrem = char para verificar qual é o status do registro
-		qtdmaxreg = quantidade máxima de registros
+		i = variavel para loops
+		j = variavel para loops
+		qtdmaxreg = inteiro para guardar a quantidade máxima de registros
+		qtdreg = inteiro para guardar a quantidade de registros não removidos
+		total = quantidade total de registros não nulos
+		menosum = constante -1
+		status = char para verificar qual é o status do arquivo
 	*/
-
+	int i, j, qtdmaxreg, qtdreg = 0, total = 0;
+	const int menosum = -1;
+	char status;
 
 	//cria e verifica se o arquivo inFile existe
 	FILE *arqentrada = fopen(inFile, "rb");
@@ -42,23 +51,66 @@ int ordenacao(char* inFile, char* outFile){
 	}
 
 	fseek(arqentrada,0,SEEK_END);
-	qtdmaxreg = ((ftell(arqentrada) - 16000) / 80) + 2;
+	qtdmaxreg = ((ftell(arqentrada) - 16000) / 80);
 
-	fseek(arqentrada,16000,SEEK_SET);
+	//cria um vetor de registros
+	struct registro reg[qtdmaxreg];
 
-	//enquanto tiver arquivo pra ler
-	while(arqentrada){
-		fread(&regrem,sizeof(char),1,arqentrada);	//le o primeiro byte do registro para verificar se ele está removido
-		//se o registro não estiver removido
-		if(regrem == '-'){
+	//matriz de inteiros para guardar o nroInscricao e o RRN: indice[nroInscricao][RRNcorrespondente]
+	int indice[qtdmaxreg][3];
 
+	//limpa a matriz indice
+	for(i = 0; i < qtdmaxreg; i++){
+		for(j = 0; j < 3; j++){
+			indice[i][j] = -1;
 		}
-		//se estiver removido
-		else{
-			fseek(arqentrada,79,SEEK_CUR);	//pula pro proximo registro
-		}
-	} //acaba o while arqentrada
+	}
 
+	//funcao para gerar os registros a partir de um arquivo
+	total = gerarregistros(reg,qtdmaxreg,arqentrada);
+
+	//funcao para gerar o "indice" dos registros baseado no nroInscricao
+	gerarindice(indice,reg,total);
+
+	/*
+	qsort: 
+		Função de ordenação quicksort, incluso na biblioteca stdlib.h
+	argumentos:
+		primeiro numero,
+		qtd total de numeros,
+		tamanho em bytes,
+		funcao de comparação
+	*/
+	qsort(indice[0], total, 2*sizeof(int), cmpcresc);
+	
+	//volta pro começo dos arquivos para clonar o cabeçalho
+	fseek(arqentrada,0,SEEK_SET);
+	fseek(arqsaida,0,SEEK_SET);
+	//copia o cabecalho do arquivo de entrada para o arquivo de saida
+	clonebin(arqentrada, arqsaida, 16000);
+
+	//volta pro começo do cabeçalho e atualiza o status('0') e o topoPilha (-1)
+	fseek(arqsaida,0,SEEK_SET);
+	status = '0';
+	fwrite(&status,sizeof(char),1,arqsaida);
+	fwrite(&menosum,sizeof(int),1,arqsaida);
+
+	//pula pro inicio dos registros
+	fseek(arqsaida,16000,SEEK_SET);
+
+	//copia todos os registros não removidos para o arquivo de saida 
+	writeallregbin(indice,total,reg,arqsaida);
+
+	//volta pro começo do cabeçalho e atualiza o status('1')
+	fseek(arqsaida,0,SEEK_SET);
+	status = '1';
+	fwrite(&status,sizeof(char),1,arqsaida);
+
+	//printa o arquivo no stdout com a função feita pelo monitor
+	binarioNaTela1(arqsaida);
+
+	fclose(arqentrada);
+	fclose(arqsaida);
 
 	return 0;
 }

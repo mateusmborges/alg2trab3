@@ -81,7 +81,6 @@ void trim(char *str) {
 }
 
 
-//funcao q verifica se uma string contem apenas digitos
 int ehNumero(char* str){
 	if(str[0] == '\0'){
 		return 0;
@@ -140,4 +139,152 @@ int ehnulo(char* str, int strlen){
 		}
 	}
 	return 0;
+}
+
+int gerarregistros(struct registro reg[], int max, FILE* arq){
+	/* 	DECLARAÇÃO DE VARIÁVEIS 
+		i = variavel para loops
+		atual = inteiro para contar quantos registros nao estao removidos
+		buffercv = buffer para guardar o indicador de tamanho do campo variavel
+		regrem = char para verificar qual é o status do registro
+		bufftag = char de buffer para os campos de tag
+	*/
+	int i, atual = 0, buffercv = 0;
+	char regrem, bufftag;
+
+	//pula pro começo dos registros
+	fseek(arq,16000,SEEK_SET);
+	//faça max vezes
+	for(i = 0; i < max; i++){
+		fread(&regrem,sizeof(char),1,arq);						//le o char do status do registro
+		//se o registro não estiver removido
+		if(regrem == '-'){
+			fseek(arq,-1,SEEK_CUR);								//volta 1 byte
+			fread(&reg[atual].removido,sizeof(char),1,arq);		//le o char do status
+			fread(&reg[atual].encadeamento,sizeof(int),1,arq);	//le o int do encadeamento
+			fread(&reg[atual].nroInscricao,sizeof(int),1,arq);	//le o int do nroInscricao
+			fread(&reg[atual].nota,sizeof(double),1,arq);		//le o double da nota
+			fread(&reg[atual].data,sizeof(char),10,arq);		//le a string da data
+			reg[atual].data[10] = '\0';							//anula o ultimo byte da data
+			//se a data for nula
+			if(reg[atual].data[0] == '\0'){
+				memset(reg[atual].data,'\0',11);				//limpa a string da data
+			}
+			fread(&buffercv,sizeof(int),1,arq);					//guarda o inteiro lido em um buffer
+			fread(&bufftag,sizeof(char),1,arq);					//guarda o char lido em um buffer
+			//se a tag for 4 (se existir o campo cidade)
+			if(bufftag == '4'){
+				reg[atual].itcv1 = buffercv;
+				reg[atual].tag4 = bufftag;
+				fread(&reg[atual].cidade,sizeof(char),reg[atual].itcv1-1,arq);
+				fread(&buffercv,sizeof(int),1,arq);
+				//se existir o campo nomeEscola (e se existir o campo cidade)
+				if(buffercv != 1077952576){
+					reg[atual].itcv2 = buffercv;
+					fread(&reg[atual].tag5,sizeof(char),1,arq);
+					fread(&reg[atual].nomeEscola,sizeof(char),reg[atual].itcv2-1,arq);
+				}
+				//se nao existir o campo nomeEscola (mas se existir o campo cidade)
+				else{
+					reg[atual].itcv2 = -1;
+					reg[atual].tag5 = '\0';
+					memset(reg[atual].nomeEscola,'\0',25);
+
+				}
+			}
+			//se a tag for 5 (se nao existir o campo cidade e existir o campo nomeEscola)
+			else if(bufftag == '5'){
+				reg[atual].itcv1 = -1;
+				reg[atual].tag4 = '\0';
+				memset(reg[atual].cidade,'\0',25);
+				reg[atual].itcv2 = buffercv;
+				reg[atual].tag5 = bufftag;
+				fread(&reg[atual].nomeEscola,sizeof(char),reg[atual].itcv2-1,arq);
+			}
+			//se a tag nao existir (se nao existir nenhum campo)
+			else{
+				reg[atual].itcv1 = -1;
+				reg[atual].tag4 = '\0';
+				memset(reg[atual].cidade,'\0',25);
+				reg[atual].itcv2 = -1;
+				reg[atual].tag5 = '\0';
+				memset(reg[atual].nomeEscola,'\0',25);
+			}
+														
+		}
+		fseek(arq,80-(ftell(arq)%80),SEEK_CUR);
+		atual++;
+	}
+	//limpa os registros que sobraram
+	for(i = 0; i < (max-atual); i++){
+		reg[atual].removido = '*';
+		reg[atual].encadeamento = -1;
+		reg[atual].nroInscricao = -1;
+		reg[atual].nota = -1.0;
+		reg[atual].itcv1 = -1;
+		reg[atual].tag4 = '\0';
+		memset(reg[atual].cidade,'\0',25);
+		reg[atual].itcv2 = -1;
+		reg[atual].tag5 = '\0';
+		memset(reg[atual].nomeEscola,'\0',25);
+	}
+	
+	return atual;
+}
+
+void gerarindice(int indice[][3], struct registro reg[], int max){
+	int i;
+
+	for(i = 0; i < max; i++){
+		if(reg[i].nroInscricao != -1){
+			indice[i][0] = reg[i].nroInscricao;
+			indice[i][1] = i;
+		}
+	}
+}
+
+void writeallregbin(int indice[][3], int total, struct registro reg[], FILE* saida){
+	int i, pos = 0, qtdbytes = 0;
+	for(i = 0; i < total; i++){
+		qtdbytes = 0;
+		pos = indice[i][1];
+		fwrite(&reg[pos].removido,sizeof(char),1,saida);
+		fwrite(&reg[pos].encadeamento,sizeof(int),1,saida);
+		fwrite(&reg[pos].nroInscricao,sizeof(int),1,saida);
+		fwrite(&reg[pos].nota,sizeof(double),1,saida);
+		if(reg[pos].data[0] == '\0'){
+			fputc('\0',saida);
+			for(int j = 0; j < 9; j++){
+				fputs("@",saida);
+			}
+		}
+		else{
+			fwrite(&reg[pos].data,sizeof(char),10,saida);
+		}
+		qtdbytes += 27;
+		if(reg[pos].itcv1 != -1){
+			fwrite(&reg[pos].itcv1,sizeof(int),1,saida);
+			fwrite(&reg[pos].tag4,sizeof(char),1,saida);
+			fwrite(&reg[pos].cidade,sizeof(char),reg[pos].itcv1-1,saida);
+			qtdbytes += reg[pos].itcv1 + sizeof(int);
+		}
+		if(reg[pos].itcv2 != -1){
+			fwrite(&reg[pos].itcv2,sizeof(int),1,saida);
+			fwrite(&reg[pos].tag5,sizeof(char),1,saida);
+			fwrite(&reg[pos].nomeEscola,sizeof(char),reg[pos].itcv2-1,saida);
+			qtdbytes += reg[pos].itcv2 + sizeof(int);
+		}
+		for(int i = 0; i < 80-qtdbytes; i++){
+			fputc('@',saida);
+		}
+	}
+}
+
+void clonebin(FILE* entrada, FILE* saida, int n){
+	unsigned char c;	//char que serve de buffer
+	//repete n vezes
+	for(int i = 0; i < n; i++){
+		fread(&c,sizeof(char),1,entrada);	//le o char da entrada
+		fwrite(&c,sizeof(char),1,saida);	//escreve esse char na saida
+	}
 }

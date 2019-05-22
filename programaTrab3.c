@@ -4,8 +4,8 @@
 * * * * * * * * * * * * * * * * * * */
 
 #include "ordenacao.h"
-//#include "uniao.h"
-//#include "interseccao.h"
+#include "uniao.h"
+#include "interseccao.h"
 #include "auxlib.h"
 
 int main(){
@@ -73,15 +73,15 @@ int main(){
 		break;
 		//se for a funcionalidade 8
 		case 8:
-			ordenacao(arquivos[0], arquivo[1]);
+			ordenacao(arquivos[0], arquivos[1]);
 		break;
 		//se for a funcionalidade 9
 		case 9:
-		
+			uniao(arquivos[0], arquivos[1], arquivos[2]);
 		break;
 		//se for a funcionalidade 10
 		case 10:
-		
+			interseccao(arquivos[0], arquivos[1], arquivos[2]);
 		break;
 		//caso nao exista a funcionalidade ainda
 		default:
