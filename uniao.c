@@ -11,44 +11,87 @@ int mergeindice(int indice1[][3], int indice2[][3], int indice3[][3], int max1, 
 		i1 = acumulador para percorrer o vetor indice1
 		i2 = acumulador para percorrer o vetor indice2
 		i3 = acumulador para percorrer o vetor indice3
+		maior = inteiro que guarda quem é maior, max1 ou max2
 	*/
-	int i1 = 0, i2 = 0, i3 = 0;
+	int i1 = 0, i2 = 0, i3 = 0, maior;
 
-	while(1){
-		//se coluna 1 for menor que coluna 2
-		if(indice1[i1][0] <= indice2[i2][0]){
-			//se forem iguais
-			if(indice1[i1][0] == indice2[i2][0]){
-				indice3[i3][0] = indice1[i1][0];//coluna 3 recebe coluna 1
-				indice3[i3][1] = indice1[i1][1];//guarda o rrn
-				indice3[i3][2] = 1;				//coloca a origem
-				i1++;							//incrementa i1
-				i2++;							//incrementa i2
+	//ve qual é maior, max1 ou max2
+	if(max1 > max2){
+		maior = max1;
+	}
+	else{
+		maior = max2;
+	}
+
+	//enquanto não acabaram os indices
+	while(i3 < max1+max2){
+		//se o numero de inscricao do indice 1 for menor que o nroInsc do indice 2
+		if(indice1[i1][0] < indice2[i2][0]){
+			//se i1 chegar a max2
+			if(i1 >= max1){
+				indice3[i3][0] = indice2[i2][0];//nroInsc do indice 3 recebe o nroInsc do indice 2
+				indice3[i3][1] = indice2[i2][1];//guarda o rrn
+				indice3[i3][2] = 2;				//coloca a origem
+				//se i2 for menor que max2
+				if(i2 < max2){
+					i2++;						//incrementa i2
+				}
 				i3++;							//incrementa i3
 			}
-			//se nao forem iguais
+			//se i1 for menor que max1
 			else{
-				indice3[i3][0] = indice1[i1][0];//coluna 3 recebe coluna 1
+				indice3[i3][0] = indice1[i1][0];//nroInsc do indice 3 recebe o nroInsc do indice 1
 				indice3[i3][1] = indice1[i1][1];//guarda o rrn
 				indice3[i3][2] = 1;				//coloca a origem
-				i1++;							//incrementa i1
+				//se i1 for menor que max1
+				if(i1 < max1){
+					i1++;						//incrementa i1
+				}
 				i3++;							//incrementa i3
 			}
 		}
-		//coluna 2 é menor que coluna 1
-		else{
-			indice3[i3][0] = indice2[i2][0];	//coluna 3 recebe coluna 2
-			indice3[i3][1] = indice2[i2][1];	//guarda o rrn
-			indice3[i3][2] = 2;					//coloca a origem
-			i2++;								//incrementa i2
-			i3++;								//incrementa i3
+		//nroInsc do indice 2 é menor que o nroInsc do indice 1
+		else if(indice1[i1][0] > indice2[i2][0]){
+			//se i2 chegar a max2
+			if(i2 >= max2){
+				indice3[i3][0] = indice1[i1][0];//nroInsc do indice 3 recebe o nroInsc do indice 1
+				indice3[i3][1] = indice1[i1][1];//guarda o rrn
+				indice3[i3][2] = 1;				//coloca a origem
+				//se i1 for menor que max1
+				if(i1 < max1){
+					i1++;						//incrementa i1
+				}
+				i3++;							//incrementa i3
+			}
+			//se i2 for menor que max2
+			else{
+				indice3[i3][0] = indice2[i2][0];//nroInsc do indice 3 recebe o nroInsc do indice 2
+				indice3[i3][1] = indice2[i2][1];//guarda o rrn
+				indice3[i3][2] = 2;				//coloca a origem
+				//se i2 for menor que max2
+				if(i2 < max2){
+					i2++;						//incrementa i2
+				}
+				i3++;							//incrementa i3
+			}
 		}
-
-		//se os dois indices acabaram, acaba a função
-		if(i1 >= max1 && i2 >= max2){
-			return 1;
+		//se os dois numeros de inscricao forem iguais
+		else if(indice1[i1][0] == indice2[i2][0]){
+			indice3[i3][0] = indice1[i1][0];//nroInsc do indice 3 recebe o nroInsc do indice 1
+			indice3[i3][1] = indice1[i1][1];//guarda o rrn
+			indice3[i3][2] = 1;				//coloca a origem
+			//se i1 for menor que max1
+			if(i1 < max1){
+				i1++;						//incrementa i1
+			}
+			//se i2 for menor que max2
+			if(i2 < max2){
+				i2++;						//incrementa i2
+			}
+			i3++;							//incrementa i3
 		}
 	}
+	return 1;
 }
 
 int uniao(char* entrada1, char* entrada2, char* saida){
@@ -79,7 +122,7 @@ int uniao(char* entrada1, char* entrada2, char* saida){
 		return ERR_NOTFILE;
 	}
 	//cria e verifica se o arquivo outFile existe
-	FILE *arqsaida = fopen(saida, "wb");
+	FILE *arqsaida = fopen(saida, "w+b");
 	if(!arqsaida){
 		printf("Falha no processamento do arquivo.");
 		return ERR_NOTFILE;
@@ -107,7 +150,6 @@ int uniao(char* entrada1, char* entrada2, char* saida){
 	fseek(arqentrada1,0,SEEK_END);
 	qtdmaxreg1 = ((ftell(arqentrada1) - 16000) / 80);
 	
-
 	//verifica quantos registros tem no segundo arquivo de entrada
 	fseek(arqentrada2,0,SEEK_END);
 	qtdmaxreg2 = ((ftell(arqentrada2) - 16000) / 80);
@@ -119,12 +161,11 @@ int uniao(char* entrada1, char* entrada2, char* saida){
 
 	//matriz de inteiros para guardar o nroInscricao e o RRN do arquivo de entrada 1: indice[nroInscricao][RRNcorrespondente]
 	int indice1[qtdmaxreg1][3];
-
 	//matriz de inteiros para guardar o nroInscricao e o RRN do arquivo de entrada 2: indice[nroInscricao][RRNcorrespondente]
 	int indice2[qtdmaxreg2][3];
-
 	//matriz de inteiros para guardar o nroInscricao e o RRN do arquivo de entrada 2: indice[nroInscricao][RRNcorrespondente]
 	int indice3[qtdmaxreg1+qtdmaxreg2][3];
+
 
 	//limpa as matrizes indices
 	for(i = 0; i < qtdmaxreg1+qtdmaxreg2; i++){
@@ -151,17 +192,22 @@ int uniao(char* entrada1, char* entrada2, char* saida){
 	gerarindice(indice1,reg1,max1);
 	gerarindice(indice2,reg2,max2);
 
+	for(i = 0; i < max2; i++){
+		//printf("indice2[%d][0] = %d\n",i,indice2[i][0]);
+	}
+
 	//dá um merge nos dois indices
 	mergeindice(indice1,indice2,indice3,max1,max2);
 
 	//conta quantos registros não removidos existem e guarda em qtdreg
 	for(i = 0; i < max1+max2; i++){
-		if(indice3[i][0] == -1){
+		if(indice3[i][0] == -1 || indice3[i][0] == 0){
 			qtdreg3 = i;
 			break;
 		}
+		qtdreg3 = max1+max2;
 	}
-	
+
 	//copia todos os registros não removidos do arquivo de entrada para o arquivo de saida 
 	for(i = 0; i < qtdreg3; i++){
 		//se a origem for o arquivo 1
@@ -179,7 +225,6 @@ int uniao(char* entrada1, char* entrada2, char* saida){
 	fseek(arqsaida,0,SEEK_SET);
 	//copia o cabecalho do arquivo de entrada para o arquivo de saida
 	clonebin(arqentrada1, arqsaida, 16000);
-
 
 	//volta pro começo do cabeçalho e atualiza o status('0') e o topoPilha (-1)
 	fseek(arqsaida,0,SEEK_SET);

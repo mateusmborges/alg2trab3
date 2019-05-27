@@ -32,7 +32,7 @@ int ordenacao(char* inFile, char* outFile){
 		return ERR_NOTFILE;
 	}
 	//cria e verifica se o arquivo outFile existe
-	FILE *arqsaida = fopen(outFile, "wb");
+	FILE *arqsaida = fopen(outFile, "w+b");
 	if(!arqsaida){
 		printf("Falha no processamento do arquivo.");
 		return ERR_NOTFILE;
@@ -67,11 +67,20 @@ int ordenacao(char* inFile, char* outFile){
 	}
 
 	//funcao para gerar os registros a partir de um arquivo
-	total = gerarregistros(reg,qtdmaxreg,arqentrada);
+	gerarregistros(reg,qtdmaxreg,arqentrada);
+
+	//conta quantos registros não removidos existem e guarda em qtdreg
+	for(i = 0; i < qtdmaxreg; i++){
+		if(reg[i].nroInscricao == -1 || reg[i].nroInscricao == 0){
+			total = i;
+			break;
+		}
+		total = qtdmaxreg;
+	}
 
 	//funcao para gerar o "indice" dos registros baseado no nroInscricao
 	gerarindice(indice,reg,total);
-
+	
 	/*
 	qsort: 
 		Função de ordenação quicksort, incluso na biblioteca stdlib.h
@@ -81,8 +90,8 @@ int ordenacao(char* inFile, char* outFile){
 		tamanho em bytes,
 		funcao de comparação
 	*/
-	qsort(indice[0], total, 2*sizeof(int), cmpcresc);
-	
+	qsort(indice[0], total, 3*sizeof(int), cmpcresc);
+
 	//volta pro começo dos arquivos para clonar o cabeçalho
 	fseek(arqentrada,0,SEEK_SET);
 	fseek(arqsaida,0,SEEK_SET);

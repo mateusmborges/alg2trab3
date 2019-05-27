@@ -6,6 +6,7 @@
 #include "ordenacao.h"
 #include "uniao.h"
 #include "interseccao.h"
+#include "recuperacao.h"
 #include "auxlib.h"
 
 int main(){
@@ -57,7 +58,7 @@ int main(){
 	switch(func){
 		//se for a funcionalidade 2
 		case 2:
-			//recuperacao(readFile);
+			recuperacao(arquivos[0]);
 		break;
 		//se for a funcionalidade 5
 		case 5:

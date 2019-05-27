@@ -210,23 +210,25 @@ int gerarregistros(struct registro reg[], int max, FILE* arq){
 				reg[atual].tag5 = '\0';
 				memset(reg[atual].nomeEscola,'\0',25);
 			}
-														
+			atual++;										
+		} //end if regrem
+		if((ftell(arq)%80) == 0){
+			fseek(arq,-80,SEEK_CUR);
 		}
 		fseek(arq,80-(ftell(arq)%80),SEEK_CUR);
-		atual++;
 	}
 	//limpa os registros que sobraram
-	for(i = 0; i < (max-atual); i++){
-		reg[atual].removido = '*';
-		reg[atual].encadeamento = -1;
-		reg[atual].nroInscricao = -1;
-		reg[atual].nota = -1.0;
-		reg[atual].itcv1 = -1;
-		reg[atual].tag4 = '\0';
-		memset(reg[atual].cidade,'\0',25);
-		reg[atual].itcv2 = -1;
-		reg[atual].tag5 = '\0';
-		memset(reg[atual].nomeEscola,'\0',25);
+	for(i = atual; i < max; i++){
+		reg[i].removido = '*';
+		reg[i].encadeamento = -1;
+		reg[i].nroInscricao = -1;
+		reg[i].nota = -1.0;
+		reg[i].itcv1 = -1;
+		reg[i].tag4 = '\0';
+		memset(reg[i].cidade,'\0',25);
+		reg[i].itcv2 = -1;
+		reg[i].tag5 = '\0';
+		memset(reg[i].nomeEscola,'\0',25);
 	}
 	
 	return atual;
@@ -236,7 +238,7 @@ void gerarindice(int indice[][3], struct registro reg[], int max){
 	int i;
 
 	for(i = 0; i < max; i++){
-		if(reg[i].nroInscricao != -1){
+		if(reg[i].nroInscricao != -1 && reg[i].nroInscricao != 0){
 			indice[i][0] = reg[i].nroInscricao;
 			indice[i][1] = i;
 		}
@@ -281,7 +283,7 @@ void writeallregbin(int indice[][3], int total, struct registro reg[], FILE* sai
 }
 
 void clonebin(FILE* entrada, FILE* saida, int n){
-	unsigned char c;	//char que serve de buffer
+	char c;	//char que serve de buffer
 	//repete n vezes
 	for(int i = 0; i < n; i++){
 		fread(&c,sizeof(char),1,entrada);	//le o char da entrada
